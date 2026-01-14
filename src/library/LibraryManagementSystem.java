@@ -3,14 +3,19 @@ package library;
 import library.model.Book;
 import library.model.Member;
 import library.model.Transaction;
+import library.observer.ConsoleObserver;
 import library.service.LibraryService;
+import library.strategy.AuthorSearchStrategy;
+import library.strategy.ISBNSearchStrategy;
+import library.strategy.TitleSearchStrategy;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
 
 /**
- * Phase 2 - Commit 5: Main Application UPDATED for Refactored Classes
- * Uses Builder Pattern and Enums
+ * Phase 3 - Commit 4: Main Application with Design Patterns
+ * Demonstrates Observer and Strategy patterns in action
  */
 public class LibraryManagementSystem {
     
@@ -18,8 +23,12 @@ public class LibraryManagementSystem {
     private static LibraryService service = LibraryService.getInstance();
     
     public static void main(String[] args) {
-        System.out.println("=== Library Management System - Phase 2 ===");
-        System.out.println("Refactored Implementation\n");
+        System.out.println("=== Library Management System - Phase 3 ===");
+        System.out.println("Design Patterns Implementation\n");
+        
+        // Observer Pattern - Register observer for event logging
+        service.registerObserver(new ConsoleObserver());
+        System.out.println("Observer registered for event notifications.\n");
         
         initializeSampleData();
         
@@ -36,7 +45,7 @@ public class LibraryManagementSystem {
                     addBook();
                     break;
                 case 3:
-                    searchBooks();
+                    searchBooksWithStrategy();
                     break;
                 case 4:
                     viewAllMembers();
@@ -52,6 +61,9 @@ public class LibraryManagementSystem {
                     break;
                 case 8:
                     viewTransactionHistory();
+                    break;
+                case 9:
+                    demonstratePatterns();
                     break;
                 case 0:
                     running = false;
@@ -74,12 +86,13 @@ public class LibraryManagementSystem {
         System.out.println("\n=== MAIN MENU ===");
         System.out.println("1. View All Books");
         System.out.println("2. Add Book");
-        System.out.println("3. Search Books");
+        System.out.println("3. Search Books (Strategy Pattern)");
         System.out.println("4. View All Members");
         System.out.println("5. Add Member");
         System.out.println("6. Borrow Book");
         System.out.println("7. Return Book");
         System.out.println("8. View Transaction History");
+        System.out.println("9. Demonstrate Design Patterns");
         System.out.println("0. Exit");
         System.out.print("Choice: ");
     }
@@ -116,7 +129,6 @@ public class LibraryManagementSystem {
         System.out.print("Category: ");
         String category = scanner.nextLine();
         
-        // Using Builder Pattern
         Book book = new Book.Builder()
             .isbn(isbn)
             .title(title)
@@ -129,10 +141,12 @@ public class LibraryManagementSystem {
         System.out.println("Book added successfully!");
     }
     
-    private static void searchBooks() {
-        System.out.println("\n--- Search Books ---");
-        System.out.println("1. By Title");
-        System.out.println("2. By Author");
+    // Strategy Pattern demonstration
+    private static void searchBooksWithStrategy() {
+        System.out.println("\n--- Search Books (Strategy Pattern) ---");
+        System.out.println("1. Search by Title");
+        System.out.println("2. Search by Author");
+        System.out.println("3. Search by ISBN");
         System.out.print("Choice: ");
         int choice = getChoice();
         
@@ -140,13 +154,24 @@ public class LibraryManagementSystem {
         String term = scanner.nextLine();
         
         List<Book> results;
-        if (choice == 1) {
-            results = service.searchBooksByTitle(term);
-        } else if (choice == 2) {
-            results = service.searchBooksByAuthor(term);
-        } else {
-            System.out.println("Invalid choice!");
-            return;
+        
+        // Strategy Pattern - select strategy at runtime
+        switch (choice) {
+            case 1:
+                results = service.searchBooks(new TitleSearchStrategy(), term);
+                System.out.println("Using TitleSearchStrategy");
+                break;
+            case 2:
+                results = service.searchBooks(new AuthorSearchStrategy(), term);
+                System.out.println("Using AuthorSearchStrategy");
+                break;
+            case 3:
+                results = service.searchBooks(new ISBNSearchStrategy(), term);
+                System.out.println("Using ISBNSearchStrategy");
+                break;
+            default:
+                System.out.println("Invalid choice!");
+                return;
         }
         
         if (results.isEmpty()) {
@@ -192,7 +217,6 @@ public class LibraryManagementSystem {
             type = Member.MemberType.STUDENT;
         }
         
-        // Using Builder Pattern
         Member member = new Member.Builder()
             .memberId(id)
             .name(name)
@@ -212,7 +236,12 @@ public class LibraryManagementSystem {
         System.out.print("Book ISBN: ");
         String isbn = scanner.nextLine();
         
-        service.borrowBook(memberId, isbn);
+        boolean success = service.borrowBook(memberId, isbn);
+        if (success) {
+            System.out.println("Success!");
+        } else {
+            System.out.println("Failed. Check the event log above.");
+        }
     }
     
     private static void returnBook() {
@@ -222,7 +251,12 @@ public class LibraryManagementSystem {
         System.out.print("Book ISBN: ");
         String isbn = scanner.nextLine();
         
-        service.returnBook(memberId, isbn);
+        boolean success = service.returnBook(memberId, isbn);
+        if (success) {
+            System.out.println("Success!");
+        } else {
+            System.out.println("Failed. Check the event log above.");
+        }
     }
     
     private static void viewTransactionHistory() {
@@ -237,8 +271,38 @@ public class LibraryManagementSystem {
         }
     }
     
+    private static void demonstratePatterns() {
+        System.out.println("\n=== Design Patterns Demonstration ===");
+        
+        System.out.println("\n1. SINGLETON PATTERN:");
+        LibraryService instance1 = LibraryService.getInstance();
+        LibraryService instance2 = LibraryService.getInstance();
+        System.out.println("Instance 1 == Instance 2: " + (instance1 == instance2));
+        System.out.println("✓ Single instance guaranteed");
+        
+        System.out.println("\n2. BUILDER PATTERN:");
+        System.out.println("Creating book with Builder:");
+        Book demoBook = new Book.Builder()
+            .isbn("DEMO-001")
+            .title("Design Patterns Book")
+            .author("Gang of Four")
+            .category("Software Engineering")
+            .build();
+        System.out.println("✓ " + demoBook);
+        
+        System.out.println("\n3. OBSERVER PATTERN:");
+        System.out.println("Events are logged automatically (see above)");
+        System.out.println("✓ ConsoleObserver notified of all events");
+        
+        System.out.println("\n4. STRATEGY PATTERN:");
+        System.out.println("Different search strategies can be used:");
+        System.out.println("- TitleSearchStrategy");
+        System.out.println("- AuthorSearchStrategy");
+        System.out.println("- ISBNSearchStrategy");
+        System.out.println("✓ Algorithm selected at runtime");
+    }
+    
     private static void initializeSampleData() {
-        // Add sample books using Builder Pattern
         service.addBook(new Book.Builder()
             .isbn("978-0134685991")
             .title("Effective Java")
@@ -263,7 +327,6 @@ public class LibraryManagementSystem {
             .publishDate(LocalDate.of(2008, 8, 1))
             .build());
         
-        // Add sample members using Builder Pattern
         service.addMember(new Member.Builder()
             .memberId("M001")
             .name("John Doe")
@@ -278,6 +341,6 @@ public class LibraryManagementSystem {
             .memberType(Member.MemberType.FACULTY)
             .build());
         
-        System.out.println("Sample data initialized.");
+        System.out.println("Sample data initialized.\n");
     }
 }
