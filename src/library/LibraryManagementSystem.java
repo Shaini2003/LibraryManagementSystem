@@ -12,11 +12,18 @@ import library.strategy.TitleSearchStrategy;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 /**
- * Phase 4 - Commit 2: COMPLETE Main Application
- * All features implemented including Reflection demonstration
+ * Phase 5 - FINAL: Complete Library Management System
+ * 
+ * ALL 5 ASPECTS IMPLEMENTED:
+ * ✓ Bad Smells - Eliminated
+ * ✓ Refactoring - Applied
+ * ✓ Design Patterns - 4 patterns implemented
+ * ✓ Reflection - Full implementation
+ * ✓ Functional Programming - Comprehensive features
  */
 public class LibraryManagementSystem {
     
@@ -24,12 +31,13 @@ public class LibraryManagementSystem {
     private static LibraryService service = LibraryService.getInstance();
     
     public static void main(String[] args) {
-        System.out.println("╔═══════════════════════════════════════════════════╗");
-        System.out.println("║   Library Management System - Complete Version   ║");
-        System.out.println("║   Phase 4: With Reflection Implementation        ║");
-        System.out.println("╚═══════════════════════════════════════════════════╝\n");
+        System.out.println("╔════════════════════════════════════════════════════════╗");
+        System.out.println("║  Library Management System - COMPLETE IMPLEMENTATION   ║");
+        System.out.println("║  All 5 Aspects: Bad Smells, Refactoring, Patterns,    ║");
+        System.out.println("║                 Reflection, Functional Programming     ║");
+        System.out.println("╚════════════════════════════════════════════════════════╝\n");
         
-        // Observer Pattern - Register observer
+        // Observer Pattern
         service.registerObserver(new ConsoleObserver());
         
         initializeSampleData();
@@ -65,14 +73,17 @@ public class LibraryManagementSystem {
                     viewTransactionHistory();
                     break;
                 case 9:
-                    demonstrateReflection();
+                    viewStatistics();
                     break;
                 case 10:
-                    demonstratePatterns();
+                    demonstrateReflection();
+                    break;
+                case 11:
+                    demonstrateFunctionalProgramming();
                     break;
                 case 0:
                     running = false;
-                    System.out.println("\n Thank you for using Library Management System!");
+                    System.out.println("\n✓ Thank you for using Library Management System!");
                     break;
                 default:
                     System.out.println("Invalid choice!");
@@ -88,19 +99,20 @@ public class LibraryManagementSystem {
     }
     
     private static void showMenu() {
-        System.out.println("\n╔═══════════════ MAIN MENU ════════════════╗");
-        System.out.println("║  1. View All Books                       ║");
-        System.out.println("║  2. Add Book                             ║");
-        System.out.println("║  3. Search Books (Strategy Pattern)      ║");
-        System.out.println("║  4. View All Members                     ║");
-        System.out.println("║  5. Add Member                           ║");
-        System.out.println("║  6. Borrow Book                          ║");
-        System.out.println("║  7. Return Book                          ║");
-        System.out.println("║  8. View Transaction History             ║");
-        System.out.println("║  9. Demonstrate Reflection ✨            ║");
-        System.out.println("║ 10. Demonstrate Design Patterns          ║");
-        System.out.println("║  0. Exit                                 ║");
-        System.out.println("╚══════════════════════════════════════════╝");
+        System.out.println("\n╔════════════════════ MAIN MENU ═══════════════════════╗");
+        System.out.println("║  1. View All Books                                   ║");
+        System.out.println("║  2. Add Book                                         ║");
+        System.out.println("║  3. Search Books (Strategy Pattern)                  ║");
+        System.out.println("║  4. View All Members                                 ║");
+        System.out.println("║  5. Add Member                                       ║");
+        System.out.println("║  6. Borrow Book                                      ║");
+        System.out.println("║  7. Return Book                                      ║");
+        System.out.println("║  8. View Transaction History                         ║");
+        System.out.println("║  9. View Statistics (Functional Programming) ✨      ║");
+        System.out.println("║ 10. Demonstrate Reflection 🔍                        ║");
+        System.out.println("║ 11. Demonstrate Functional Programming 🚀            ║");
+        System.out.println("║  0. Exit                                             ║");
+        System.out.println("╚══════════════════════════════════════════════════════╝");
         System.out.print("Choice: ");
     }
     
@@ -164,15 +176,15 @@ public class LibraryManagementSystem {
         switch (choice) {
             case 1:
                 results = service.searchBooks(new TitleSearchStrategy(), term);
-                System.out.println("Using TitleSearchStrategy");
+                System.out.println("📖 Using TitleSearchStrategy");
                 break;
             case 2:
                 results = service.searchBooks(new AuthorSearchStrategy(), term);
-                System.out.println("Using AuthorSearchStrategy");
+                System.out.println("✍️  Using AuthorSearchStrategy");
                 break;
             case 3:
                 results = service.searchBooks(new ISBNSearchStrategy(), term);
-                System.out.println("Using ISBNSearchStrategy");
+                System.out.println("🔢 Using ISBNSearchStrategy");
                 break;
             default:
                 System.out.println("Invalid choice!");
@@ -182,7 +194,7 @@ public class LibraryManagementSystem {
         if (results.isEmpty()) {
             System.out.println("No books found.");
         } else {
-            System.out.println("\n Found " + results.size() + " book(s):");
+            System.out.println("\n✓ Found " + results.size() + " book(s):");
             for (Book book : results) {
                 System.out.println("  - " + book);
             }
@@ -270,20 +282,56 @@ public class LibraryManagementSystem {
         if (transactions.isEmpty()) {
             System.out.println("No transactions recorded.");
         } else {
-            for (Transaction txn : transactions) {
-                System.out.println(txn);
-            }
+            transactions.forEach(System.out::println);  // Method reference
         }
     }
     
-    // NEW: Reflection Demonstration
-    private static void demonstrateReflection() {
-        System.out.println("\n╔═══════════════════════════════════════════════╗");
-        System.out.println("║       REFLECTION DEMONSTRATION                ║");
-        System.out.println("║  Analyzing Library Classes with Reflection   ║");
-        System.out.println("╚═══════════════════════════════════════════════╝\n");
+    // NEW: Statistics using Functional Programming
+    private static void viewStatistics() {
+        System.out.println("\n╔═══════════════════════════════════════════════════════╗");
+        System.out.println("║         LIBRARY STATISTICS (Functional Programming)   ║");
+        System.out.println("╚═══════════════════════════════════════════════════════╝\n");
         
-        // Analyze different classes
+        Map<String, Object> stats = service.getStatistics();
+        
+        System.out.println("📊 Overall Statistics:");
+        System.out.println("   Total Books: " + stats.get("totalBooks"));
+        System.out.println("   Total Members: " + stats.get("totalMembers"));
+        System.out.println("   Total Transactions: " + stats.get("totalTransactions"));
+        System.out.println("   Available Books: " + stats.get("availableBooks"));
+        System.out.println("   Borrowed Books: " + stats.get("borrowedBooks"));
+        System.out.println("   Overdue Books: " + stats.get("overdueBooks"));
+        
+        System.out.println("\n📚 Books by Category:");
+        @SuppressWarnings("unchecked")
+        Map<String, Long> byCategory = (Map<String, Long>) stats.get("booksByCategory");
+        byCategory.forEach((category, count) -> 
+            System.out.println("   " + category + ": " + count));
+        
+        System.out.println("\n📖 Books by Status:");
+        @SuppressWarnings("unchecked")
+        Map<Book.BookStatus, Long> byStatus = (Map<Book.BookStatus, Long>) stats.get("booksByStatus");
+        byStatus.forEach((status, count) -> 
+            System.out.println("   " + status + ": " + count));
+        
+        System.out.println("\n✍️  All Authors:");
+        service.getAllAuthors().forEach(author -> 
+            System.out.println("   - " + author));
+        
+        service.getMostPopularCategory().ifPresent(category ->
+            System.out.println("\n🏆 Most Popular Category: " + category));
+        
+        service.getMemberWithMostBorrows().ifPresent(member ->
+            System.out.println("🏆 Most Active Member: " + member.getName() + 
+                             " (" + member.getBorrowedCount() + " books)"));
+    }
+    
+    // Reflection Demonstration
+    private static void demonstrateReflection() {
+        System.out.println("\n╔═══════════════════════════════════════════════════════╗");
+        System.out.println("║          REFLECTION DEMONSTRATION 🔍                  ║");
+        System.out.println("╚═══════════════════════════════════════════════════════╝\n");
+        
         Class<?>[] classesToAnalyze = {
             Book.class,
             Member.class,
@@ -296,70 +344,85 @@ public class LibraryManagementSystem {
             System.out.println(info);
         }
         
-        // Demonstrate dynamic method invocation
-        System.out.println("\n═══════════════════════════════════════");
-        System.out.println("Dynamic Method Invocation Example:");
+        System.out.println("═══════════════════════════════════════");
+        System.out.println("Dynamic Method Invocation:");
         System.out.println("═══════════════════════════════════════");
         
         try {
             Book testBook = new Book.Builder()
-                .isbn("REF-TEST-001")
-                .title("Reflection Test Book")
+                .isbn("REF-001")
+                .title("Reflection Test")
                 .author("Test Author")
                 .category("Testing")
                 .build();
             
-            // Use reflection to invoke getTitle()
             Object title = ReflectionAnalyzer.invokeMethod(testBook, "getTitle");
-            System.out.println("✓ Invoked getTitle() via reflection: " + title);
+            System.out.println("✓ getTitle() via reflection: " + title);
             
-            // Use reflection to access private field
             Object isbn = ReflectionAnalyzer.getFieldValue(testBook, "isbn");
-            System.out.println("✓ Accessed private field 'isbn' via reflection: " + isbn);
+            System.out.println("✓ Field 'isbn' via reflection: " + isbn);
             
         } catch (Exception e) {
-            System.out.println("✗ Reflection demo failed: " + e.getMessage());
+            System.out.println("✗ Error: " + e.getMessage());
         }
-        
-        System.out.println("\n✅ Reflection demonstration complete!");
     }
     
-    private static void demonstratePatterns() {
-        System.out.println("\n╔═══════════════════════════════════════════════╗");
-        System.out.println("║       DESIGN PATTERNS DEMONSTRATION           ║");
-        System.out.println("╚═══════════════════════════════════════════════╝\n");
+    // Functional Programming Demonstration
+    private static void demonstrateFunctionalProgramming() {
+        System.out.println("\n╔═══════════════════════════════════════════════════════╗");
+        System.out.println("║     FUNCTIONAL PROGRAMMING DEMONSTRATION 🚀           ║");
+        System.out.println("╚═══════════════════════════════════════════════════════╝\n");
         
-        System.out.println("1. SINGLETON PATTERN:");
-        System.out.println("   - Ensures single instance of LibraryService");
-        LibraryService instance1 = LibraryService.getInstance();
-        LibraryService instance2 = LibraryService.getInstance();
-        System.out.println("   - Instance 1 == Instance 2: " + (instance1 == instance2));
-        System.out.println("   ✓ Single instance guaranteed\n");
+        System.out.println("1️⃣  LAMBDA EXPRESSIONS & PREDICATES:");
+        System.out.println("   Filter available books:");
+        List<Book> availableBooks = service.filterBooks(
+            book -> book.getStatus() == Book.BookStatus.AVAILABLE);
+        System.out.println("   ✓ Found " + availableBooks.size() + " available books\n");
         
-        System.out.println("2. BUILDER PATTERN:");
-        System.out.println("   - Fluent API for creating complex objects");
-        Book demoBook = new Book.Builder()
-            .isbn("DEMO-001")
-            .title("Design Patterns Book")
-            .author("Gang of Four")
-            .category("Software Engineering")
-            .build();
-        System.out.println("   ✓ " + demoBook + "\n");
+        System.out.println("2️⃣  STREAM API - map() operation:");
+        System.out.println("   All book titles:");
+        service.getAllBooks().stream()
+            .map(Book::getTitle)  // Method reference
+            .sorted()
+            .limit(5)
+            .forEach(title -> System.out.println("   - " + title));
         
-        System.out.println("3. OBSERVER PATTERN:");
-        System.out.println("   - Events are logged automatically by ConsoleObserver");
-        System.out.println("   - Loose coupling between subject and observers");
-        System.out.println("   ✓ All library events are being monitored\n");
+        System.out.println("\n3️⃣  METHOD REFERENCES:");
+        System.out.println("   All authors (using Book::getAuthor):");
+        service.getAllAuthors().stream()
+            .limit(5)
+            .forEach(author -> System.out.println("   - " + author));
         
-        System.out.println("4. STRATEGY PATTERN:");
-        System.out.println("   - Different search algorithms interchangeable at runtime");
-        System.out.println("   - Available strategies:");
-        System.out.println("     • TitleSearchStrategy");
-        System.out.println("     • AuthorSearchStrategy");
-        System.out.println("     • ISBNSearchStrategy");
-        System.out.println("   ✓ Algorithm selected dynamically\n");
+        System.out.println("\n4️⃣  COLLECTORS - groupingBy:");
+        System.out.println("   Books grouped by category:");
+        service.getBooksByCategory().forEach((category, count) ->
+            System.out.println("   " + category + ": " + count + " books"));
         
-        System.out.println("✅ All 4 design patterns demonstrated!");
+        System.out.println("\n5️⃣  OPTIONAL - Safe null handling:");
+        service.getMostPopularCategory().ifPresentOrElse(
+            category -> System.out.println("   Most popular: " + category),
+            () -> System.out.println("   No data available"));
+        
+        System.out.println("\n6️⃣  HIGHER-ORDER FUNCTIONS:");
+        System.out.println("   Custom filter (books with 'Java' in title):");
+        long javaBooks = service.countBooks(
+            book -> book.getTitle().toLowerCase().contains("java"));
+        System.out.println("   ✓ Found " + javaBooks + " Java books\n");
+        
+        System.out.println("7️⃣  IMMUTABILITY:");
+        Book original = service.getAllBooks().get(0);
+        Book modified = original.withStatus(Book.BookStatus.MAINTENANCE);
+        System.out.println("   Original status: " + original.getStatus());
+        System.out.println("   Modified status: " + modified.getStatus());
+        System.out.println("   ✓ Original unchanged (immutable)\n");
+        
+        System.out.println("8️⃣  STREAM OPERATIONS - anyMatch, allMatch:");
+        boolean hasOverdue = service.hasOverdueBooks();
+        boolean allAvailable = service.allBooksAvailable();
+        System.out.println("   Has overdue books: " + hasOverdue);
+        System.out.println("   All books available: " + allAvailable);
+        
+        System.out.println("\n✅ All functional programming features demonstrated!");
     }
     
     private static void initializeSampleData() {
@@ -387,6 +450,22 @@ public class LibraryManagementSystem {
             .publishDate(LocalDate.of(2008, 8, 1))
             .build());
         
+        service.addBook(new Book.Builder()
+            .isbn("978-0201633610")
+            .title("Design Patterns")
+            .author("Gang of Four")
+            .category("Software Engineering")
+            .publishDate(LocalDate.of(1994, 10, 31))
+            .build());
+        
+        service.addBook(new Book.Builder()
+            .isbn("978-0135957059")
+            .title("The Pragmatic Programmer")
+            .author("David Thomas")
+            .category("Programming")
+            .publishDate(LocalDate.of(2019, 9, 13))
+            .build());
+        
         service.addMember(new Member.Builder()
             .memberId("M001")
             .name("John Doe")
@@ -399,6 +478,13 @@ public class LibraryManagementSystem {
             .name("Jane Smith")
             .email("jane@example.com")
             .memberType(Member.MemberType.FACULTY)
+            .build());
+        
+        service.addMember(new Member.Builder()
+            .memberId("M003")
+            .name("Bob Wilson")
+            .email("bob@example.com")
+            .memberType(Member.MemberType.STUDENT)
             .build());
         
         System.out.println("✓ Sample data initialized.\n");
