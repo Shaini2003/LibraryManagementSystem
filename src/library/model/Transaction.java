@@ -1,19 +1,33 @@
 package library.model;
 
+import library.annotations.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Phase 2 - Commit 3: Transaction class - NEW
- * 
- * REFACTORING: Extract Class
- * Extracted from string-based transaction logging
- * Provides type-safe transaction records
+ * Transaction class - Complete with annotations
  */
+@DesignPattern(
+    pattern = "Builder Pattern",
+    description = "Uses Builder pattern for object construction"
+)
+@Immutable(threadSafe = true)
+@Author(
+    name = "Library Team",
+    date = "2025-01-15",
+    version = "2.0"
+)
 public class Transaction {
+    
+    @Validatable(required = true, message = "Transaction ID is required")
     private final String transactionId;
+    
+    @Validatable(required = true, message = "Member ID is required")
     private final String memberId;
+    
+    @Validatable(required = true, message = "Book ISBN is required")
     private final String bookIsbn;
+    
     private final TransactionType type;
     private final LocalDateTime transactionDate;
     private final LocalDateTime dueDate;
@@ -38,10 +52,12 @@ public class Transaction {
     public LocalDateTime getTransactionDate() { return transactionDate; }
     public LocalDateTime getDueDate() { return dueDate; }
     
+    @PerformanceMonitor(operationName = "Check Overdue Status")
     public boolean isOverdue() {
         return dueDate != null && LocalDateTime.now().isAfter(dueDate);
     }
     
+    @DesignPattern(pattern = "Builder Pattern (Inner Class)")
     public static class Builder {
         private String transactionId;
         private String memberId;

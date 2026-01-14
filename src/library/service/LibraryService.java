@@ -1,5 +1,6 @@
 package library.service;
 
+import library.annotations.*;
 import library.model.Book;
 import library.model.Member;
 import library.model.Transaction;
@@ -8,29 +9,33 @@ import library.strategy.SearchStrategy;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
- * Phase 3 - Commit 3: LibraryService with ALL DESIGN PATTERNS
- * 
- * PATTERNS IMPLEMENTED:
- * 1. Singleton Pattern - Proper thread-safe implementation
- * 2. Observer Pattern - Event notification system
- * 3. Strategy Pattern - Flexible search algorithms
- * 4. Builder Pattern - Already in model classes
+ * LibraryService with Custom Annotations
  */
+@DesignPattern(
+    pattern = "Singleton Pattern",
+    description = "Ensures single instance of library service",
+    benefits = {"Centralized state", "Thread-safe", "Global access point"}
+)
+@Author(
+    name = "Library Team",
+    date = "2025-01-15",
+    version = "3.0",
+    modifications = {"Added Observer Pattern", "Added Strategy Pattern", "Added FP features"}
+)
 public class LibraryService {
-    // Singleton Pattern - thread-safe double-checked locking
+    
     private static volatile LibraryService instance;
     private static final Object lock = new Object();
     
     private final Map<String, Book> bookCatalog;
     private final Map<String, Member> members;
     private final List<Transaction> transactions;
-    
-    // Observer Pattern - list of observers
     private final List<LibraryObserver> observers;
     
-    // Private constructor (Singleton)
     private LibraryService() {
         this.bookCatalog = new HashMap<>();
         this.members = new HashMap<>();
@@ -38,7 +43,7 @@ public class LibraryService {
         this.observers = new ArrayList<>();
     }
     
-    // Singleton Pattern - thread-safe getInstance
+    @PerformanceMonitor(operationName = "Get Singleton Instance")
     public static LibraryService getInstance() {
         if (instance == null) {
             synchronized (lock) {
@@ -50,7 +55,7 @@ public class LibraryService {
         return instance;
     }
     
-    // Observer Pattern - register observers
+    // Observer Pattern methods
     public void registerObserver(LibraryObserver observer) {
         observers.add(observer);
     }
@@ -59,14 +64,12 @@ public class LibraryService {
         observers.remove(observer);
     }
     
-    // Observer Pattern - notify all observers
     private void notifyObservers(String event, String details) {
-        for (LibraryObserver observer : observers) {
-            observer.update(event, details);
-        }
+        observers.forEach(observer -> observer.update(event, details));
     }
     
-    // Book Management with Observer notifications
+    // Book Management
+    @PerformanceMonitor(operationName = "Add Book", logExecution = true)
     public void addBook(Book book) {
         bookCatalog.put(book.getIsbn(), book);
         notifyObservers("BOOK_ADDED", "Book added: " + book.getTitle());
@@ -80,12 +83,33 @@ public class LibraryService {
         return new ArrayList<>(bookCatalog.values());
     }
     
-    // Strategy Pattern - search with interchangeable algorithms
+    // Functional Programming
+    public List<Book> filterBooks(Predicate<Book> predicate) {
+        return bookCatalog.values().stream()
+            .filter(predicate)
+            .collect(Collectors.toList());
+    }
+    
+    public List<Book> getAvailableBooks() {
+        return filterBooks(book -> book.getStatus() == Book.BookStatus.AVAILABLE);
+    }
+    
+    public List<Book> getBooksByCategory(String category) {
+        return filterBooks(book -> book.getCategory().equalsIgnoreCase(category));
+    }
+    
+    public List<Book> getBooksByAuthor(String author) {
+        return filterBooks(book -> book.getAuthor().toLowerCase()
+                                        .contains(author.toLowerCase()));
+    }
+    
+    // Strategy Pattern
     public List<Book> searchBooks(SearchStrategy strategy, String query) {
         return strategy.search(new ArrayList<>(bookCatalog.values()), query);
     }
     
-    // Member Management with Observer notifications
+    // Member Management
+    @PerformanceMonitor(operationName = "Add Member", logExecution = true)
     public void addMember(Member member) {
         members.put(member.getMemberId(), member);
         notifyObservers("MEMBER_ADDED", "Member registered: " + member.getName());
@@ -99,7 +123,24 @@ public class LibraryService {
         return new ArrayList<>(members.values());
     }
     
-    // Transaction Operations with Observer notifications
+    public List<Member> getMembersByType(Member.MemberType type) {
+        return members.values().stream()
+            .filter(member -> member.getMemberType() == type)
+            .collect(Collectors.toList());
+    }
+    
+    public List<Member> getMembersWhoCanBorrowMore() {
+        return members.values().stream()
+            .filter(Member::canBorrowMore)
+            .collect(Collectors.toList());
+    }
+    
+    // Transaction Operations
+    @PerformanceMonitor(
+        operationName = "Borrow Book Operation",
+        logExecution = true,
+        expectedMaxTime = 500
+    )
     public boolean borrowBook(String memberId, String isbn) {
         Optional<Member> memberOpt = getMember(memberId);
         Optional<Book> bookOpt = getBook(isbn);
@@ -124,11 +165,9 @@ public class LibraryService {
             return false;
         }
         
-        // Update book status (immutable)
         Book borrowedBook = book.withStatus(Book.BookStatus.BORROWED);
         bookCatalog.put(isbn, borrowedBook);
         
-        // Update member
         List<String> borrowedBooks = new ArrayList<>(member.getBorrowedBookIsbns());
         borrowedBooks.add(isbn);
         Member updatedMember = new Member.Builder()
@@ -141,7 +180,6 @@ public class LibraryService {
             .build();
         members.put(memberId, updatedMember);
         
-        // Create transaction
         Transaction transaction = new Transaction.Builder()
             .transactionId(generateTransactionId())
             .memberId(memberId)
@@ -152,13 +190,17 @@ public class LibraryService {
             .build();
         transactions.add(transaction);
         
-        // Notify observers
         notifyObservers("BOOK_BORROWED", 
             member.getName() + " borrowed " + book.getTitle());
         
         return true;
     }
     
+    @PerformanceMonitor(
+        operationName = "Return Book Operation",
+        logExecution = true,
+        expectedMaxTime = 500
+    )
     public boolean returnBook(String memberId, String isbn) {
         Optional<Member> memberOpt = getMember(memberId);
         Optional<Book> bookOpt = getBook(isbn);
@@ -177,11 +219,9 @@ public class LibraryService {
             return false;
         }
         
-        // Update book status
         Book returnedBook = book.withStatus(Book.BookStatus.AVAILABLE);
         bookCatalog.put(isbn, returnedBook);
         
-        // Update member
         List<String> borrowedBooks = new ArrayList<>(member.getBorrowedBookIsbns());
         borrowedBooks.remove(isbn);
         Member updatedMember = new Member.Builder()
@@ -194,7 +234,6 @@ public class LibraryService {
             .build();
         members.put(memberId, updatedMember);
         
-        // Create transaction
         Transaction transaction = new Transaction.Builder()
             .transactionId(generateTransactionId())
             .memberId(memberId)
@@ -204,7 +243,6 @@ public class LibraryService {
             .build();
         transactions.add(transaction);
         
-        // Notify observers
         notifyObservers("BOOK_RETURNED", 
             member.getName() + " returned " + book.getTitle());
         
@@ -215,11 +253,116 @@ public class LibraryService {
         return new ArrayList<>(transactions);
     }
     
+    // Functional Programming Features
+    public List<Transaction> getOverdueTransactions() {
+        return transactions.stream()
+            .filter(Transaction::isOverdue)
+            .filter(t -> t.getType() == Transaction.TransactionType.BORROW)
+            .collect(Collectors.toList());
+    }
+    
+    public Map<String, Long> getBooksByCategory() {
+        return bookCatalog.values().stream()
+            .collect(Collectors.groupingBy(
+                Book::getCategory,
+                Collectors.counting()
+            ));
+    }
+    
+    public Map<Book.BookStatus, Long> getBooksByStatus() {
+        return bookCatalog.values().stream()
+            .collect(Collectors.groupingBy(
+                Book::getStatus,
+                Collectors.counting()
+            ));
+    }
+    
+    public List<String> getAllAuthors() {
+        return bookCatalog.values().stream()
+            .map(Book::getAuthor)
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+    }
+    
+    public List<String> getAllCategories() {
+        return bookCatalog.values().stream()
+            .map(Book::getCategory)
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+    }
+    
+    public long getTotalBorrowedBooksCount() {
+        return members.values().stream()
+            .mapToInt(Member::getBorrowedCount)
+            .sum();
+    }
+    
+    public Optional<Member> getMemberWithMostBorrows() {
+        return members.values().stream()
+            .max(Comparator.comparingInt(Member::getBorrowedCount));
+    }
+    
+    public Optional<String> getMostPopularCategory() {
+        return getBooksByCategory().entrySet().stream()
+            .max(Map.Entry.comparingByValue())
+            .map(Map.Entry::getKey);
+    }
+    
+    public List<Book> getBooksSortedByTitle() {
+        return bookCatalog.values().stream()
+            .sorted(Comparator.comparing(Book::getTitle))
+            .collect(Collectors.toList());
+    }
+    
+    public List<Book> getBooksSortedByAuthor() {
+        return bookCatalog.values().stream()
+            .sorted(Comparator.comparing(Book::getAuthor))
+            .collect(Collectors.toList());
+    }
+    
+    public List<Transaction> getRecentTransactions(int count) {
+        return transactions.stream()
+            .sorted(Comparator.comparing(Transaction::getTransactionDate).reversed())
+            .limit(count)
+            .collect(Collectors.toList());
+    }
+    
+    public boolean hasOverdueBooks() {
+        return transactions.stream()
+            .filter(t -> t.getType() == Transaction.TransactionType.BORROW)
+            .anyMatch(Transaction::isOverdue);
+    }
+    
+    public boolean allBooksAvailable() {
+        return bookCatalog.values().stream()
+            .allMatch(book -> book.getStatus() == Book.BookStatus.AVAILABLE);
+    }
+    
+    public long countBooks(Predicate<Book> predicate) {
+        return bookCatalog.values().stream()
+            .filter(predicate)
+            .count();
+    }
+    
+    public Map<String, Object> getStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalBooks", bookCatalog.size());
+        stats.put("totalMembers", members.size());
+        stats.put("totalTransactions", transactions.size());
+        stats.put("availableBooks", getAvailableBooks().size());
+        stats.put("borrowedBooks", getTotalBorrowedBooksCount());
+        stats.put("overdueBooks", getOverdueTransactions().size());
+        stats.put("booksByCategory", getBooksByCategory());
+        stats.put("booksByStatus", getBooksByStatus());
+        return stats;
+    }
+    
     private String generateTransactionId() {
         return "TXN" + System.currentTimeMillis();
     }
     
-    // For testing
     public void reset() {
         bookCatalog.clear();
         members.clear();

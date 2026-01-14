@@ -1,21 +1,20 @@
 package library.reflection;
 
+import library.annotations.*;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * Phase 4 - Commit 1: Reflection Analyzer
- * Comprehensive Java Reflection implementation
- * - Analyzes class structure
- * - Detects design patterns automatically
- * - Provides dynamic method invocation
- * - Enables runtime introspection
+ * ENHANCED Reflection Analyzer with Custom Annotation Processing
+ * Demonstrates comprehensive Java Reflection capabilities
  */
 public class ReflectionAnalyzer {
     
     /**
-     * Analyze a class and return comprehensive information
+     * Analyze a class with annotation processing
      */
     public static ClassInfo analyzeClass(Class<?> clazz) {
         ClassInfo info = new ClassInfo();
@@ -26,19 +25,22 @@ public class ReflectionAnalyzer {
         info.isAbstract = Modifier.isAbstract(clazz.getModifiers());
         info.packageName = clazz.getPackage() != null ? clazz.getPackage().getName() : "";
         
+        // Analyze class-level annotations
+        info.annotations = analyzeClassAnnotations(clazz);
+        
         // Analyze constructors
         Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         for (Constructor<?> constructor : constructors) {
             info.constructors.add(analyzeConstructor(constructor));
         }
         
-        // Analyze methods
+        // Analyze methods (including annotations)
         Method[] methods = clazz.getDeclaredMethods();
         for (Method method : methods) {
             info.methods.add(analyzeMethod(method));
         }
         
-        // Analyze fields
+        // Analyze fields (including annotations)
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
             info.fields.add(analyzeField(field));
@@ -65,6 +67,130 @@ public class ReflectionAnalyzer {
         // Detect design patterns
         info.designPatterns = detectDesignPatterns(clazz);
         
+        // Process custom annotations
+        info.customAnnotationInfo = processCustomAnnotations(clazz);
+        
+        return info;
+    }
+    
+    /**
+     * NEW: Analyze class-level annotations
+     */
+    private static List<AnnotationInfo> analyzeClassAnnotations(Class<?> clazz) {
+        List<AnnotationInfo> annotations = new ArrayList<>();
+        Annotation[] classAnnotations = clazz.getDeclaredAnnotations();
+        
+        for (Annotation annotation : classAnnotations) {
+            AnnotationInfo info = new AnnotationInfo();
+            info.name = annotation.annotationType().getSimpleName();
+            info.fullName = annotation.annotationType().getName();
+            info.details = annotation.toString();
+            annotations.add(info);
+        }
+        
+        return annotations;
+    }
+    
+    /**
+     * NEW: Process custom annotations and extract detailed information
+     */
+    private static String processCustomAnnotations(Class<?> clazz) {
+        StringBuilder sb = new StringBuilder();
+        
+        // Check for @DesignPattern annotation
+        if (clazz.isAnnotationPresent(DesignPattern.class)) {
+            DesignPattern dp = clazz.getAnnotation(DesignPattern.class);
+            sb.append("\n📐 Design Pattern Information:");
+            sb.append("\n   Pattern: ").append(dp.pattern());
+            sb.append("\n   Description: ").append(dp.description());
+            if (dp.benefits().length > 0) {
+                sb.append("\n   Benefits: ").append(Arrays.toString(dp.benefits()));
+            }
+        }
+        
+        // Check for @Immutable annotation
+        if (clazz.isAnnotationPresent(Immutable.class)) {
+            Immutable im = clazz.getAnnotation(Immutable.class);
+            sb.append("\n🔒 Immutability Information:");
+            sb.append("\n   Status: ").append(im.value());
+            sb.append("\n   Thread-Safe: ").append(im.threadSafe());
+        }
+        
+        // Check for @Author annotation
+        if (clazz.isAnnotationPresent(Author.class)) {
+            Author author = clazz.getAnnotation(Author.class);
+            sb.append("\n✍️  Author Information:");
+            sb.append("\n   Name: ").append(author.name());
+            sb.append("\n   Date: ").append(author.date());
+            sb.append("\n   Version: ").append(author.version());
+            if (author.modifications().length > 0) {
+                sb.append("\n   Modifications: ").append(Arrays.toString(author.modifications()));
+            }
+        }
+        
+        return sb.length() > 0 ? sb.toString() : "\n   No custom annotations found.";
+    }
+    
+    /**
+     * NEW: Analyze field annotations (especially @Validatable)
+     */
+    private static FieldInfo analyzeField(Field field) {
+        FieldInfo info = new FieldInfo();
+        info.name = field.getName();
+        info.modifiers = Modifier.toString(field.getModifiers());
+        info.type = field.getType().getSimpleName();
+        info.isFinal = Modifier.isFinal(field.getModifiers());
+        info.isStatic = Modifier.isStatic(field.getModifiers());
+        info.isPrivate = Modifier.isPrivate(field.getModifiers());
+        
+        // NEW: Check for @Validatable annotation
+        if (field.isAnnotationPresent(Validatable.class)) {
+            Validatable val = field.getAnnotation(Validatable.class);
+            info.validationInfo = String.format(
+                "Validatable[required=%s, minLength=%d, maxLength=%d, message='%s']",
+                val.required(), val.minLength(), val.maxLength(), val.message()
+            );
+        }
+        
+        return info;
+    }
+    
+    /**
+     * NEW: Analyze method annotations (especially @PerformanceMonitor)
+     */
+    private static MethodInfo analyzeMethod(Method method) {
+        MethodInfo info = new MethodInfo();
+        info.name = method.getName();
+        info.modifiers = Modifier.toString(method.getModifiers());
+        info.returnType = method.getReturnType().getSimpleName();
+        info.parameterCount = method.getParameterCount();
+        info.isStatic = Modifier.isStatic(method.getModifiers());
+        info.isPublic = Modifier.isPublic(method.getModifiers());
+        info.isPrivate = Modifier.isPrivate(method.getModifiers());
+        
+        Parameter[] parameters = method.getParameters();
+        for (Parameter param : parameters) {
+            info.parameterTypes.add(param.getType().getSimpleName());
+        }
+        
+        // NEW: Check for @PerformanceMonitor annotation
+        if (method.isAnnotationPresent(PerformanceMonitor.class)) {
+            PerformanceMonitor pm = method.getAnnotation(PerformanceMonitor.class);
+            info.performanceInfo = String.format(
+                "PerformanceMonitor[operation='%s', logExecution=%s, maxTime=%dms]",
+                pm.operationName(), pm.logExecution(), pm.expectedMaxTime()
+            );
+        }
+        
+        // Check for @Author annotation on methods
+        if (method.isAnnotationPresent(Author.class)) {
+            Author author = method.getAnnotation(Author.class);
+            info.authorInfo = String.format(
+                "Author[name='%s', date='%s', version='%s']",
+                author.name(), author.date(), author.version()
+            );
+        }
+        
         return info;
     }
     
@@ -83,40 +209,17 @@ public class ReflectionAnalyzer {
         return info;
     }
     
-    private static MethodInfo analyzeMethod(Method method) {
-        MethodInfo info = new MethodInfo();
-        info.name = method.getName();
-        info.modifiers = Modifier.toString(method.getModifiers());
-        info.returnType = method.getReturnType().getSimpleName();
-        info.parameterCount = method.getParameterCount();
-        info.isStatic = Modifier.isStatic(method.getModifiers());
-        info.isPublic = Modifier.isPublic(method.getModifiers());
-        info.isPrivate = Modifier.isPrivate(method.getModifiers());
-        
-        Parameter[] parameters = method.getParameters();
-        for (Parameter param : parameters) {
-            info.parameterTypes.add(param.getType().getSimpleName());
-        }
-        
-        return info;
-    }
-    
-    private static FieldInfo analyzeField(Field field) {
-        FieldInfo info = new FieldInfo();
-        info.name = field.getName();
-        info.modifiers = Modifier.toString(field.getModifiers());
-        info.type = field.getType().getSimpleName();
-        info.isFinal = Modifier.isFinal(field.getModifiers());
-        info.isStatic = Modifier.isStatic(field.getModifiers());
-        info.isPrivate = Modifier.isPrivate(field.getModifiers());
-        return info;
-    }
-    
     /**
-     * Automatically detect design patterns used in the class
+     * Detect design patterns (enhanced with annotation checking)
      */
     private static List<String> detectDesignPatterns(Class<?> clazz) {
         List<String> patterns = new ArrayList<>();
+        
+        // Check annotation first
+        if (clazz.isAnnotationPresent(DesignPattern.class)) {
+            DesignPattern dp = clazz.getAnnotation(DesignPattern.class);
+            patterns.add(dp.pattern() + " (Annotated)");
+        }
         
         // Check for Singleton pattern
         if (hasSingletonPattern(clazz)) {
@@ -148,12 +251,10 @@ public class ReflectionAnalyzer {
     
     private static boolean hasSingletonPattern(Class<?> clazz) {
         try {
-            // Look for getInstance method
             Method getInstance = clazz.getMethod("getInstance");
             if (Modifier.isStatic(getInstance.getModifiers()) &&
                 getInstance.getReturnType().equals(clazz)) {
                 
-                // Look for private constructor
                 Constructor<?>[] constructors = clazz.getDeclaredConstructors();
                 for (Constructor<?> cons : constructors) {
                     if (Modifier.isPrivate(cons.getModifiers())) {
@@ -171,7 +272,6 @@ public class ReflectionAnalyzer {
         Class<?>[] innerClasses = clazz.getDeclaredClasses();
         for (Class<?> inner : innerClasses) {
             if (inner.getSimpleName().equals("Builder")) {
-                // Check if Builder has a build() method
                 try {
                     Method buildMethod = inner.getMethod("build");
                     if (buildMethod.getReturnType().equals(clazz)) {
@@ -189,14 +289,12 @@ public class ReflectionAnalyzer {
         if (clazz.isInterface()) {
             Method[] methods = clazz.getDeclaredMethods();
             for (Method method : methods) {
-                // Observer pattern typically has update or notify method
                 if (method.getName().equals("update") || 
                     method.getName().equals("notify")) {
                     return true;
                 }
             }
         } else {
-            // Check if class implements Observer-like interface
             String className = clazz.getSimpleName().toLowerCase();
             if (className.contains("observer") || className.contains("listener")) {
                 return true;
@@ -211,7 +309,6 @@ public class ReflectionAnalyzer {
             if (className.contains("strategy")) {
                 return true;
             }
-            // Strategy pattern typically has one main method
             Method[] methods = clazz.getDeclaredMethods();
             if (methods.length == 1 || methods.length == 2) {
                 return true;
@@ -241,7 +338,6 @@ public class ReflectionAnalyzer {
             throws Exception {
         Class<?> clazz = obj.getClass();
         
-        // Find method with matching name and parameter count
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.getName().equals(methodName) && 
                 method.getParameterCount() == args.length) {
@@ -274,12 +370,39 @@ public class ReflectionAnalyzer {
     }
     
     /**
-     * Create instance of a class using default constructor
+     * NEW: Validate object using @Validatable annotations
      */
-    public static Object createInstance(Class<?> clazz) throws Exception {
-        Constructor<?> constructor = clazz.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        return constructor.newInstance();
+    public static List<String> validateObject(Object obj) {
+        List<String> errors = new ArrayList<>();
+        Class<?> clazz = obj.getClass();
+        Field[] fields = clazz.getDeclaredFields();
+        
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Validatable.class)) {
+                Validatable val = field.getAnnotation(Validatable.class);
+                field.setAccessible(true);
+                
+                try {
+                    Object value = field.get(obj);
+                    
+                    if (val.required() && value == null) {
+                        errors.add(val.message() + " (Field: " + field.getName() + ")");
+                    }
+                    
+                    if (value instanceof String) {
+                        String strValue = (String) value;
+                        if (strValue.length() < val.minLength() || 
+                            strValue.length() > val.maxLength()) {
+                            errors.add(val.message() + " (Field: " + field.getName() + ")");
+                        }
+                    }
+                } catch (IllegalAccessException e) {
+                    errors.add("Cannot access field: " + field.getName());
+                }
+            }
+        }
+        
+        return errors;
     }
     
     // Inner classes for storing analysis results
@@ -298,6 +421,8 @@ public class ReflectionAnalyzer {
         public List<String> interfaces = new ArrayList<>();
         public List<String> innerClasses = new ArrayList<>();
         public List<String> designPatterns = new ArrayList<>();
+        public List<AnnotationInfo> annotations = new ArrayList<>(); // NEW
+        public String customAnnotationInfo = "";                      // NEW
         
         @Override
         public String toString() {
@@ -318,6 +443,19 @@ public class ReflectionAnalyzer {
             else if (isAbstract) sb.append("Abstract Class");
             else sb.append("Class");
             sb.append("\n");
+            
+            // Show annotations
+            if (!annotations.isEmpty()) {
+                sb.append("\n📝 Annotations:\n");
+                for (AnnotationInfo annotation : annotations) {
+                    sb.append("   @").append(annotation.name).append("\n");
+                }
+            }
+            
+            // Show custom annotation details
+            if (!customAnnotationInfo.isEmpty()) {
+                sb.append(customAnnotationInfo).append("\n");
+            }
             
             if (!designPatterns.isEmpty()) {
                 sb.append("\n🎨 Design Patterns Detected:\n");
@@ -343,6 +481,12 @@ public class ReflectionAnalyzer {
         }
     }
     
+    public static class AnnotationInfo {
+        public String name;
+        public String fullName;
+        public String details;
+    }
+    
     public static class ConstructorInfo {
         public String modifiers;
         public int parameterCount;
@@ -360,6 +504,8 @@ public class ReflectionAnalyzer {
         public boolean isPublic;
         public boolean isPrivate;
         public List<String> parameterTypes = new ArrayList<>();
+        public String performanceInfo = "";  // NEW
+        public String authorInfo = "";       // NEW
     }
     
     public static class FieldInfo {
@@ -369,5 +515,6 @@ public class ReflectionAnalyzer {
         public boolean isFinal;
         public boolean isStatic;
         public boolean isPrivate;
+        public String validationInfo = "";  // NEW
     }
 }
