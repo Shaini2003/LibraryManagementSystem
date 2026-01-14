@@ -3,45 +3,73 @@ package library.service;
 import library.model.Book;
 import library.model.Member;
 import library.model.Transaction;
+import library.observer.LibraryObserver;
+import library.strategy.SearchStrategy;
+
 import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * Phase 2 - Commit 4: LibraryService REFACTORED
+ * Phase 3 - Commit 3: LibraryService with ALL DESIGN PATTERNS
  * 
- * REFACTORINGS APPLIED:
- * 1. Extract Method - broke down long methods
- * 2. Use Builder Pattern for object creation
- * 3. Use Enums instead of Strings
- * 4. Use Transaction objects instead of string logging
- * 5. Encapsulate Collections
- * 6. Remove Duplicate Code
+ * PATTERNS IMPLEMENTED:
+ * 1. Singleton Pattern - Proper thread-safe implementation
+ * 2. Observer Pattern - Event notification system
+ * 3. Strategy Pattern - Flexible search algorithms
+ * 4. Builder Pattern - Already in model classes
  */
 public class LibraryService {
-    // Better singleton (will be improved in Phase 3)
-    private static LibraryService instance;
+    // Singleton Pattern - thread-safe double-checked locking
+    private static volatile LibraryService instance;
+    private static final Object lock = new Object();
     
     private final Map<String, Book> bookCatalog;
     private final Map<String, Member> members;
     private final List<Transaction> transactions;
     
+    // Observer Pattern - list of observers
+    private final List<LibraryObserver> observers;
+    
+    // Private constructor (Singleton)
     private LibraryService() {
         this.bookCatalog = new HashMap<>();
         this.members = new HashMap<>();
         this.transactions = new ArrayList<>();
+        this.observers = new ArrayList<>();
     }
     
-    public static synchronized LibraryService getInstance() {
+    // Singleton Pattern - thread-safe getInstance
+    public static LibraryService getInstance() {
         if (instance == null) {
-            instance = new LibraryService();
+            synchronized (lock) {
+                if (instance == null) {
+                    instance = new LibraryService();
+                }
+            }
         }
         return instance;
     }
     
-    // Book Management - Refactored
+    // Observer Pattern - register observers
+    public void registerObserver(LibraryObserver observer) {
+        observers.add(observer);
+    }
+    
+    public void removeObserver(LibraryObserver observer) {
+        observers.remove(observer);
+    }
+    
+    // Observer Pattern - notify all observers
+    private void notifyObservers(String event, String details) {
+        for (LibraryObserver observer : observers) {
+            observer.update(event, details);
+        }
+    }
+    
+    // Book Management with Observer notifications
     public void addBook(Book book) {
         bookCatalog.put(book.getIsbn(), book);
-        System.out.println("Book added: " + book.getTitle());
+        notifyObservers("BOOK_ADDED", "Book added: " + book.getTitle());
     }
     
     public Optional<Book> getBook(String isbn) {
@@ -52,10 +80,15 @@ public class LibraryService {
         return new ArrayList<>(bookCatalog.values());
     }
     
-    // Member Management - Refactored
+    // Strategy Pattern - search with interchangeable algorithms
+    public List<Book> searchBooks(SearchStrategy strategy, String query) {
+        return strategy.search(new ArrayList<>(bookCatalog.values()), query);
+    }
+    
+    // Member Management with Observer notifications
     public void addMember(Member member) {
         members.put(member.getMemberId(), member);
-        System.out.println("Member registered: " + member.getName());
+        notifyObservers("MEMBER_ADDED", "Member registered: " + member.getName());
     }
     
     public Optional<Member> getMember(String memberId) {
@@ -66,62 +99,38 @@ public class LibraryService {
         return new ArrayList<>(members.values());
     }
     
-    // Refactoring: Extracted validation methods
-    private boolean validateMemberExists(String memberId) {
-        return members.containsKey(memberId);
-    }
-    
-    private boolean validateBookExists(String isbn) {
-        return bookCatalog.containsKey(isbn);
-    }
-    
-    private boolean validateBookAvailable(Book book) {
-        return book.getStatus() == Book.BookStatus.AVAILABLE;
-    }
-    
-    private boolean validateBorrowingLimit(Member member) {
-        return member.canBorrowMore();
-    }
-    
-    // Refactoring: Extract Method - borrowBook broken into smaller methods
+    // Transaction Operations with Observer notifications
     public boolean borrowBook(String memberId, String isbn) {
-        if (!validateMemberExists(memberId)) {
-            System.out.println("Error: Member not found");
+        Optional<Member> memberOpt = getMember(memberId);
+        Optional<Book> bookOpt = getBook(isbn);
+        
+        if (!memberOpt.isPresent() || !bookOpt.isPresent()) {
+            notifyObservers("BORROW_FAILED", "Member or book not found");
             return false;
         }
         
-        if (!validateBookExists(isbn)) {
-            System.out.println("Error: Book not found");
+        Member member = memberOpt.get();
+        Book book = bookOpt.get();
+        
+        if (!member.canBorrowMore()) {
+            notifyObservers("BORROW_FAILED", 
+                "Borrowing limit reached for " + member.getName());
             return false;
         }
         
-        Member member = members.get(memberId);
-        Book book = bookCatalog.get(isbn);
-        
-        if (!validateBookAvailable(book)) {
-            System.out.println("Error: Book not available");
+        if (book.getStatus() != Book.BookStatus.AVAILABLE) {
+            notifyObservers("BORROW_FAILED", 
+                "Book not available: " + book.getTitle());
             return false;
         }
         
-        if (!validateBorrowingLimit(member)) {
-            System.out.println("Error: Borrowing limit reached");
-            return false;
-        }
-        
-        // Perform borrow operation
-        executeBorrowOperation(member, book);
-        return true;
-    }
-    
-    // Refactoring: Extract Method
-    private void executeBorrowOperation(Member member, Book book) {
-        // Update book status using immutable pattern
+        // Update book status (immutable)
         Book borrowedBook = book.withStatus(Book.BookStatus.BORROWED);
-        bookCatalog.put(book.getIsbn(), borrowedBook);
+        bookCatalog.put(isbn, borrowedBook);
         
         // Update member
         List<String> borrowedBooks = new ArrayList<>(member.getBorrowedBookIsbns());
-        borrowedBooks.add(book.getIsbn());
+        borrowedBooks.add(isbn);
         Member updatedMember = new Member.Builder()
             .memberId(member.getMemberId())
             .name(member.getName())
@@ -130,63 +139,51 @@ public class LibraryService {
             .registrationDate(member.getRegistrationDate())
             .borrowedBookIsbns(borrowedBooks)
             .build();
-        members.put(member.getMemberId(), updatedMember);
+        members.put(memberId, updatedMember);
         
-        // Create transaction record
-        createTransaction(member.getMemberId(), book.getIsbn(), 
-                         Transaction.TransactionType.BORROW);
-        
-        System.out.println("Book borrowed successfully: " + book.getTitle());
-    }
-    
-    // Refactoring: Extract Method
-    private void createTransaction(String memberId, String isbn, 
-                                   Transaction.TransactionType type) {
+        // Create transaction
         Transaction transaction = new Transaction.Builder()
             .transactionId(generateTransactionId())
             .memberId(memberId)
             .bookIsbn(isbn)
-            .type(type)
+            .type(Transaction.TransactionType.BORROW)
             .transactionDate(LocalDateTime.now())
-            .dueDate(type == Transaction.TransactionType.BORROW ? 
-                    LocalDateTime.now().plusDays(14) : null)
+            .dueDate(LocalDateTime.now().plusDays(14))
             .build();
         transactions.add(transaction);
-    }
-    
-    // Refactoring: Simplified returnBook method
-    public boolean returnBook(String memberId, String isbn) {
-        if (!validateMemberExists(memberId)) {
-            System.out.println("Error: Member not found");
-            return false;
-        }
         
-        if (!validateBookExists(isbn)) {
-            System.out.println("Error: Book not found");
-            return false;
-        }
+        // Notify observers
+        notifyObservers("BOOK_BORROWED", 
+            member.getName() + " borrowed " + book.getTitle());
         
-        Member member = members.get(memberId);
-        Book book = bookCatalog.get(isbn);
-        
-        if (!member.getBorrowedBookIsbns().contains(isbn)) {
-            System.out.println("Error: Member hasn't borrowed this book");
-            return false;
-        }
-        
-        executeReturnOperation(member, book);
         return true;
     }
     
-    // Refactoring: Extract Method
-    private void executeReturnOperation(Member member, Book book) {
+    public boolean returnBook(String memberId, String isbn) {
+        Optional<Member> memberOpt = getMember(memberId);
+        Optional<Book> bookOpt = getBook(isbn);
+        
+        if (!memberOpt.isPresent() || !bookOpt.isPresent()) {
+            notifyObservers("RETURN_FAILED", "Member or book not found");
+            return false;
+        }
+        
+        Member member = memberOpt.get();
+        Book book = bookOpt.get();
+        
+        if (!member.getBorrowedBookIsbns().contains(isbn)) {
+            notifyObservers("RETURN_FAILED", 
+                "Member hasn't borrowed this book");
+            return false;
+        }
+        
         // Update book status
         Book returnedBook = book.withStatus(Book.BookStatus.AVAILABLE);
-        bookCatalog.put(book.getIsbn(), returnedBook);
+        bookCatalog.put(isbn, returnedBook);
         
         // Update member
         List<String> borrowedBooks = new ArrayList<>(member.getBorrowedBookIsbns());
-        borrowedBooks.remove(book.getIsbn());
+        borrowedBooks.remove(isbn);
         Member updatedMember = new Member.Builder()
             .memberId(member.getMemberId())
             .name(member.getName())
@@ -195,35 +192,23 @@ public class LibraryService {
             .registrationDate(member.getRegistrationDate())
             .borrowedBookIsbns(borrowedBooks)
             .build();
-        members.put(member.getMemberId(), updatedMember);
+        members.put(memberId, updatedMember);
         
         // Create transaction
-        createTransaction(member.getMemberId(), book.getIsbn(), 
-                         Transaction.TransactionType.RETURN);
+        Transaction transaction = new Transaction.Builder()
+            .transactionId(generateTransactionId())
+            .memberId(memberId)
+            .bookIsbn(isbn)
+            .type(Transaction.TransactionType.RETURN)
+            .transactionDate(LocalDateTime.now())
+            .build();
+        transactions.add(transaction);
         
-        System.out.println("Book returned successfully: " + book.getTitle());
-    }
-    
-    // Refactoring: Unified search method (will be improved with Strategy in Phase 3)
-    public List<Book> searchBooksByTitle(String title) {
-        return searchBooks(book -> 
-            book.getTitle().toLowerCase().contains(title.toLowerCase()));
-    }
-    
-    public List<Book> searchBooksByAuthor(String author) {
-        return searchBooks(book -> 
-            book.getAuthor().toLowerCase().contains(author.toLowerCase()));
-    }
-    
-    // Refactoring: Extract common search logic
-    private List<Book> searchBooks(java.util.function.Predicate<Book> predicate) {
-        List<Book> results = new ArrayList<>();
-        for (Book book : bookCatalog.values()) {
-            if (predicate.test(book)) {
-                results.add(book);
-            }
-        }
-        return results;
+        // Notify observers
+        notifyObservers("BOOK_RETURNED", 
+            member.getName() + " returned " + book.getTitle());
+        
+        return true;
     }
     
     public List<Transaction> getTransactionHistory() {
@@ -239,5 +224,6 @@ public class LibraryService {
         bookCatalog.clear();
         members.clear();
         transactions.clear();
+        observers.clear();
     }
 }
