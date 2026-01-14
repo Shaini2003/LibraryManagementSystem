@@ -4,6 +4,7 @@ import library.model.Book;
 import library.model.Member;
 import library.model.Transaction;
 import library.observer.ConsoleObserver;
+import library.reflection.ReflectionAnalyzer;
 import library.service.LibraryService;
 import library.strategy.AuthorSearchStrategy;
 import library.strategy.ISBNSearchStrategy;
@@ -14,8 +15,8 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * Phase 3 - Commit 4: Main Application with Design Patterns
- * Demonstrates Observer and Strategy patterns in action
+ * Phase 4 - Commit 2: COMPLETE Main Application
+ * All features implemented including Reflection demonstration
  */
 public class LibraryManagementSystem {
     
@@ -23,12 +24,13 @@ public class LibraryManagementSystem {
     private static LibraryService service = LibraryService.getInstance();
     
     public static void main(String[] args) {
-        System.out.println("=== Library Management System - Phase 3 ===");
-        System.out.println("Design Patterns Implementation\n");
+        System.out.println("╔═══════════════════════════════════════════════════╗");
+        System.out.println("║   Library Management System - Complete Version   ║");
+        System.out.println("║   Phase 4: With Reflection Implementation        ║");
+        System.out.println("╚═══════════════════════════════════════════════════╝\n");
         
-        // Observer Pattern - Register observer for event logging
+        // Observer Pattern - Register observer
         service.registerObserver(new ConsoleObserver());
-        System.out.println("Observer registered for event notifications.\n");
         
         initializeSampleData();
         
@@ -63,11 +65,14 @@ public class LibraryManagementSystem {
                     viewTransactionHistory();
                     break;
                 case 9:
+                    demonstrateReflection();
+                    break;
+                case 10:
                     demonstratePatterns();
                     break;
                 case 0:
                     running = false;
-                    System.out.println("Goodbye!");
+                    System.out.println("\n Thank you for using Library Management System!");
                     break;
                 default:
                     System.out.println("Invalid choice!");
@@ -83,17 +88,19 @@ public class LibraryManagementSystem {
     }
     
     private static void showMenu() {
-        System.out.println("\n=== MAIN MENU ===");
-        System.out.println("1. View All Books");
-        System.out.println("2. Add Book");
-        System.out.println("3. Search Books (Strategy Pattern)");
-        System.out.println("4. View All Members");
-        System.out.println("5. Add Member");
-        System.out.println("6. Borrow Book");
-        System.out.println("7. Return Book");
-        System.out.println("8. View Transaction History");
-        System.out.println("9. Demonstrate Design Patterns");
-        System.out.println("0. Exit");
+        System.out.println("\n╔═══════════════ MAIN MENU ════════════════╗");
+        System.out.println("║  1. View All Books                       ║");
+        System.out.println("║  2. Add Book                             ║");
+        System.out.println("║  3. Search Books (Strategy Pattern)      ║");
+        System.out.println("║  4. View All Members                     ║");
+        System.out.println("║  5. Add Member                           ║");
+        System.out.println("║  6. Borrow Book                          ║");
+        System.out.println("║  7. Return Book                          ║");
+        System.out.println("║  8. View Transaction History             ║");
+        System.out.println("║  9. Demonstrate Reflection ✨            ║");
+        System.out.println("║ 10. Demonstrate Design Patterns          ║");
+        System.out.println("║  0. Exit                                 ║");
+        System.out.println("╚══════════════════════════════════════════╝");
         System.out.print("Choice: ");
     }
     
@@ -138,10 +145,9 @@ public class LibraryManagementSystem {
             .build();
         
         service.addBook(book);
-        System.out.println("Book added successfully!");
+        System.out.println("✓ Book added successfully!");
     }
     
-    // Strategy Pattern demonstration
     private static void searchBooksWithStrategy() {
         System.out.println("\n--- Search Books (Strategy Pattern) ---");
         System.out.println("1. Search by Title");
@@ -155,7 +161,6 @@ public class LibraryManagementSystem {
         
         List<Book> results;
         
-        // Strategy Pattern - select strategy at runtime
         switch (choice) {
             case 1:
                 results = service.searchBooks(new TitleSearchStrategy(), term);
@@ -177,9 +182,9 @@ public class LibraryManagementSystem {
         if (results.isEmpty()) {
             System.out.println("No books found.");
         } else {
-            System.out.println("Found " + results.size() + " book(s):");
+            System.out.println("\n Found " + results.size() + " book(s):");
             for (Book book : results) {
-                System.out.println("- " + book);
+                System.out.println("  - " + book);
             }
         }
     }
@@ -226,7 +231,7 @@ public class LibraryManagementSystem {
             .build();
         
         service.addMember(member);
-        System.out.println("Member added successfully!");
+        System.out.println("✓ Member added successfully!");
     }
     
     private static void borrowBook() {
@@ -238,9 +243,9 @@ public class LibraryManagementSystem {
         
         boolean success = service.borrowBook(memberId, isbn);
         if (success) {
-            System.out.println("Success!");
+            System.out.println("✓ Success!");
         } else {
-            System.out.println("Failed. Check the event log above.");
+            System.out.println("✗ Failed. Check the event log above.");
         }
     }
     
@@ -253,9 +258,9 @@ public class LibraryManagementSystem {
         
         boolean success = service.returnBook(memberId, isbn);
         if (success) {
-            System.out.println("Success!");
+            System.out.println("✓ Success!");
         } else {
-            System.out.println("Failed. Check the event log above.");
+            System.out.println("✗ Failed. Check the event log above.");
         }
     }
     
@@ -271,35 +276,90 @@ public class LibraryManagementSystem {
         }
     }
     
-    private static void demonstratePatterns() {
-        System.out.println("\n=== Design Patterns Demonstration ===");
+    // NEW: Reflection Demonstration
+    private static void demonstrateReflection() {
+        System.out.println("\n╔═══════════════════════════════════════════════╗");
+        System.out.println("║       REFLECTION DEMONSTRATION                ║");
+        System.out.println("║  Analyzing Library Classes with Reflection   ║");
+        System.out.println("╚═══════════════════════════════════════════════╝\n");
         
-        System.out.println("\n1. SINGLETON PATTERN:");
+        // Analyze different classes
+        Class<?>[] classesToAnalyze = {
+            Book.class,
+            Member.class,
+            Transaction.class,
+            LibraryService.class
+        };
+        
+        for (Class<?> clazz : classesToAnalyze) {
+            ReflectionAnalyzer.ClassInfo info = ReflectionAnalyzer.analyzeClass(clazz);
+            System.out.println(info);
+        }
+        
+        // Demonstrate dynamic method invocation
+        System.out.println("\n═══════════════════════════════════════");
+        System.out.println("Dynamic Method Invocation Example:");
+        System.out.println("═══════════════════════════════════════");
+        
+        try {
+            Book testBook = new Book.Builder()
+                .isbn("REF-TEST-001")
+                .title("Reflection Test Book")
+                .author("Test Author")
+                .category("Testing")
+                .build();
+            
+            // Use reflection to invoke getTitle()
+            Object title = ReflectionAnalyzer.invokeMethod(testBook, "getTitle");
+            System.out.println("✓ Invoked getTitle() via reflection: " + title);
+            
+            // Use reflection to access private field
+            Object isbn = ReflectionAnalyzer.getFieldValue(testBook, "isbn");
+            System.out.println("✓ Accessed private field 'isbn' via reflection: " + isbn);
+            
+        } catch (Exception e) {
+            System.out.println("✗ Reflection demo failed: " + e.getMessage());
+        }
+        
+        System.out.println("\n✅ Reflection demonstration complete!");
+    }
+    
+    private static void demonstratePatterns() {
+        System.out.println("\n╔═══════════════════════════════════════════════╗");
+        System.out.println("║       DESIGN PATTERNS DEMONSTRATION           ║");
+        System.out.println("╚═══════════════════════════════════════════════╝\n");
+        
+        System.out.println("1. SINGLETON PATTERN:");
+        System.out.println("   - Ensures single instance of LibraryService");
         LibraryService instance1 = LibraryService.getInstance();
         LibraryService instance2 = LibraryService.getInstance();
-        System.out.println("Instance 1 == Instance 2: " + (instance1 == instance2));
-        System.out.println("✓ Single instance guaranteed");
+        System.out.println("   - Instance 1 == Instance 2: " + (instance1 == instance2));
+        System.out.println("   ✓ Single instance guaranteed\n");
         
-        System.out.println("\n2. BUILDER PATTERN:");
-        System.out.println("Creating book with Builder:");
+        System.out.println("2. BUILDER PATTERN:");
+        System.out.println("   - Fluent API for creating complex objects");
         Book demoBook = new Book.Builder()
             .isbn("DEMO-001")
             .title("Design Patterns Book")
             .author("Gang of Four")
             .category("Software Engineering")
             .build();
-        System.out.println("✓ " + demoBook);
+        System.out.println("   ✓ " + demoBook + "\n");
         
-        System.out.println("\n3. OBSERVER PATTERN:");
-        System.out.println("Events are logged automatically (see above)");
-        System.out.println("✓ ConsoleObserver notified of all events");
+        System.out.println("3. OBSERVER PATTERN:");
+        System.out.println("   - Events are logged automatically by ConsoleObserver");
+        System.out.println("   - Loose coupling between subject and observers");
+        System.out.println("   ✓ All library events are being monitored\n");
         
-        System.out.println("\n4. STRATEGY PATTERN:");
-        System.out.println("Different search strategies can be used:");
-        System.out.println("- TitleSearchStrategy");
-        System.out.println("- AuthorSearchStrategy");
-        System.out.println("- ISBNSearchStrategy");
-        System.out.println("✓ Algorithm selected at runtime");
+        System.out.println("4. STRATEGY PATTERN:");
+        System.out.println("   - Different search algorithms interchangeable at runtime");
+        System.out.println("   - Available strategies:");
+        System.out.println("     • TitleSearchStrategy");
+        System.out.println("     • AuthorSearchStrategy");
+        System.out.println("     • ISBNSearchStrategy");
+        System.out.println("   ✓ Algorithm selected dynamically\n");
+        
+        System.out.println("✅ All 4 design patterns demonstrated!");
     }
     
     private static void initializeSampleData() {
@@ -341,6 +401,6 @@ public class LibraryManagementSystem {
             .memberType(Member.MemberType.FACULTY)
             .build());
         
-        System.out.println("Sample data initialized.\n");
+        System.out.println("✓ Sample data initialized.\n");
     }
 }
