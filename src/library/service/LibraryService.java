@@ -1,5 +1,6 @@
 package library.service;
 
+import library.annotations.*;
 import library.model.Book;
 import library.model.Member;
 import library.model.Transaction;
@@ -12,16 +13,21 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Phase 5 - Commit 1: FINAL LibraryService with Functional Programming
- * 
- * ALL FEATURES IMPLEMENTED:
- * - Singleton Pattern
- * - Observer Pattern  
- * - Strategy Pattern
- * - Functional Programming (Streams, Lambdas, Method References)
+ * LibraryService with Custom Annotations
  */
+@DesignPattern(
+    pattern = "Singleton Pattern",
+    description = "Ensures single instance of library service",
+    benefits = {"Centralized state", "Thread-safe", "Global access point"}
+)
+@Author(
+    name = "Library Team",
+    date = "2025-01-15",
+    version = "3.0",
+    modifications = {"Added Observer Pattern", "Added Strategy Pattern", "Added FP features"}
+)
 public class LibraryService {
-    // Singleton Pattern
+    
     private static volatile LibraryService instance;
     private static final Object lock = new Object();
     
@@ -37,6 +43,7 @@ public class LibraryService {
         this.observers = new ArrayList<>();
     }
     
+    @PerformanceMonitor(operationName = "Get Singleton Instance")
     public static LibraryService getInstance() {
         if (instance == null) {
             synchronized (lock) {
@@ -48,7 +55,7 @@ public class LibraryService {
         return instance;
     }
     
-    // Observer Pattern
+    // Observer Pattern methods
     public void registerObserver(LibraryObserver observer) {
         observers.add(observer);
     }
@@ -57,12 +64,12 @@ public class LibraryService {
         observers.remove(observer);
     }
     
-    // Functional Programming: forEach with lambda
     private void notifyObservers(String event, String details) {
         observers.forEach(observer -> observer.update(event, details));
     }
     
     // Book Management
+    @PerformanceMonitor(operationName = "Add Book", logExecution = true)
     public void addBook(Book book) {
         bookCatalog.put(book.getIsbn(), book);
         notifyObservers("BOOK_ADDED", "Book added: " + book.getTitle());
@@ -76,14 +83,13 @@ public class LibraryService {
         return new ArrayList<>(bookCatalog.values());
     }
     
-    // Functional Programming: Higher-order function accepting Predicate
+    // Functional Programming
     public List<Book> filterBooks(Predicate<Book> predicate) {
         return bookCatalog.values().stream()
             .filter(predicate)
             .collect(Collectors.toList());
     }
     
-    // Functional Programming: Composed predicates
     public List<Book> getAvailableBooks() {
         return filterBooks(book -> book.getStatus() == Book.BookStatus.AVAILABLE);
     }
@@ -103,6 +109,7 @@ public class LibraryService {
     }
     
     // Member Management
+    @PerformanceMonitor(operationName = "Add Member", logExecution = true)
     public void addMember(Member member) {
         members.put(member.getMemberId(), member);
         notifyObservers("MEMBER_ADDED", "Member registered: " + member.getName());
@@ -116,21 +123,24 @@ public class LibraryService {
         return new ArrayList<>(members.values());
     }
     
-    // Functional Programming: Filter members
     public List<Member> getMembersByType(Member.MemberType type) {
         return members.values().stream()
             .filter(member -> member.getMemberType() == type)
             .collect(Collectors.toList());
     }
     
-    // Functional Programming: Find members who can borrow more
     public List<Member> getMembersWhoCanBorrowMore() {
         return members.values().stream()
-            .filter(Member::canBorrowMore)  // Method reference
+            .filter(Member::canBorrowMore)
             .collect(Collectors.toList());
     }
     
     // Transaction Operations
+    @PerformanceMonitor(
+        operationName = "Borrow Book Operation",
+        logExecution = true,
+        expectedMaxTime = 500
+    )
     public boolean borrowBook(String memberId, String isbn) {
         Optional<Member> memberOpt = getMember(memberId);
         Optional<Book> bookOpt = getBook(isbn);
@@ -155,11 +165,9 @@ public class LibraryService {
             return false;
         }
         
-        // Update book (immutable)
         Book borrowedBook = book.withStatus(Book.BookStatus.BORROWED);
         bookCatalog.put(isbn, borrowedBook);
         
-        // Update member
         List<String> borrowedBooks = new ArrayList<>(member.getBorrowedBookIsbns());
         borrowedBooks.add(isbn);
         Member updatedMember = new Member.Builder()
@@ -172,7 +180,6 @@ public class LibraryService {
             .build();
         members.put(memberId, updatedMember);
         
-        // Create transaction
         Transaction transaction = new Transaction.Builder()
             .transactionId(generateTransactionId())
             .memberId(memberId)
@@ -189,6 +196,11 @@ public class LibraryService {
         return true;
     }
     
+    @PerformanceMonitor(
+        operationName = "Return Book Operation",
+        logExecution = true,
+        expectedMaxTime = 500
+    )
     public boolean returnBook(String memberId, String isbn) {
         Optional<Member> memberOpt = getMember(memberId);
         Optional<Book> bookOpt = getBook(isbn);
@@ -207,11 +219,9 @@ public class LibraryService {
             return false;
         }
         
-        // Update book
         Book returnedBook = book.withStatus(Book.BookStatus.AVAILABLE);
         bookCatalog.put(isbn, returnedBook);
         
-        // Update member
         List<String> borrowedBooks = new ArrayList<>(member.getBorrowedBookIsbns());
         borrowedBooks.remove(isbn);
         Member updatedMember = new Member.Builder()
@@ -224,7 +234,6 @@ public class LibraryService {
             .build();
         members.put(memberId, updatedMember);
         
-        // Create transaction
         Transaction transaction = new Transaction.Builder()
             .transactionId(generateTransactionId())
             .memberId(memberId)
@@ -244,34 +253,22 @@ public class LibraryService {
         return new ArrayList<>(transactions);
     }
     
-    // ═══════════════════════════════════════════════════════════════
-    // FUNCTIONAL PROGRAMMING FEATURES
-    // ═══════════════════════════════════════════════════════════════
-    
-    /**
-     * FP: Get overdue transactions using Stream API and method references
-     */
+    // Functional Programming Features
     public List<Transaction> getOverdueTransactions() {
         return transactions.stream()
-            .filter(Transaction::isOverdue)  // Method reference
+            .filter(Transaction::isOverdue)
             .filter(t -> t.getType() == Transaction.TransactionType.BORROW)
             .collect(Collectors.toList());
     }
     
-    /**
-     * FP: Group books by category with counting
-     */
     public Map<String, Long> getBooksByCategory() {
         return bookCatalog.values().stream()
             .collect(Collectors.groupingBy(
-                Book::getCategory,  // Method reference
+                Book::getCategory,
                 Collectors.counting()
             ));
     }
     
-    /**
-     * FP: Group books by status
-     */
     public Map<Book.BookStatus, Long> getBooksByStatus() {
         return bookCatalog.values().stream()
             .collect(Collectors.groupingBy(
@@ -280,20 +277,14 @@ public class LibraryService {
             ));
     }
     
-    /**
-     * FP: Get all unique authors (distinct + map)
-     */
     public List<String> getAllAuthors() {
         return bookCatalog.values().stream()
-            .map(Book::getAuthor)  // Method reference
+            .map(Book::getAuthor)
             .distinct()
             .sorted()
             .collect(Collectors.toList());
     }
     
-    /**
-     * FP: Get all unique categories
-     */
     public List<String> getAllCategories() {
         return bookCatalog.values().stream()
             .map(Book::getCategory)
@@ -302,53 +293,35 @@ public class LibraryService {
             .collect(Collectors.toList());
     }
     
-    /**
-     * FP: Calculate total borrowed books count
-     */
     public long getTotalBorrowedBooksCount() {
         return members.values().stream()
             .mapToInt(Member::getBorrowedCount)
             .sum();
     }
     
-    /**
-     * FP: Get member with most borrowed books
-     */
     public Optional<Member> getMemberWithMostBorrows() {
         return members.values().stream()
             .max(Comparator.comparingInt(Member::getBorrowedCount));
     }
     
-    /**
-     * FP: Get most popular category
-     */
     public Optional<String> getMostPopularCategory() {
         return getBooksByCategory().entrySet().stream()
             .max(Map.Entry.comparingByValue())
             .map(Map.Entry::getKey);
     }
     
-    /**
-     * FP: Get books sorted by title
-     */
     public List<Book> getBooksSortedByTitle() {
         return bookCatalog.values().stream()
             .sorted(Comparator.comparing(Book::getTitle))
             .collect(Collectors.toList());
     }
     
-    /**
-     * FP: Get books sorted by author
-     */
     public List<Book> getBooksSortedByAuthor() {
         return bookCatalog.values().stream()
             .sorted(Comparator.comparing(Book::getAuthor))
             .collect(Collectors.toList());
     }
     
-    /**
-     * FP: Get recent transactions (last N)
-     */
     public List<Transaction> getRecentTransactions(int count) {
         return transactions.stream()
             .sorted(Comparator.comparing(Transaction::getTransactionDate).reversed())
@@ -356,35 +329,23 @@ public class LibraryService {
             .collect(Collectors.toList());
     }
     
-    /**
-     * FP: Check if any book is overdue
-     */
     public boolean hasOverdueBooks() {
         return transactions.stream()
             .filter(t -> t.getType() == Transaction.TransactionType.BORROW)
             .anyMatch(Transaction::isOverdue);
     }
     
-    /**
-     * FP: Check if all books are available
-     */
     public boolean allBooksAvailable() {
         return bookCatalog.values().stream()
             .allMatch(book -> book.getStatus() == Book.BookStatus.AVAILABLE);
     }
     
-    /**
-     * FP: Count books matching predicate
-     */
     public long countBooks(Predicate<Book> predicate) {
         return bookCatalog.values().stream()
             .filter(predicate)
             .count();
     }
     
-    /**
-     * FP: Get statistics summary
-     */
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalBooks", bookCatalog.size());

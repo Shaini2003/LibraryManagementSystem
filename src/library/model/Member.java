@@ -1,5 +1,6 @@
 package library.model;
 
+import library.annotations.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,24 +8,35 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Phase 2 - Commit 2: Member class FULLY REFACTORED
- * 
- * REFACTORINGS APPLIED:
- * 1. Replace Constructor with Builder Pattern
- * 2. Encapsulate Fields
- * 3. Replace Type Code with Enum + Eliminate Magic Numbers
- * 4. Encapsulate Collection
- * 5. Extract Method
+ * Member class with Custom Annotations
  */
+@DesignPattern(
+    pattern = "Builder Pattern",
+    description = "Uses Builder pattern for object construction"
+)
+@Immutable(threadSafe = true)
+@Author(
+    name = "Library Team",
+    date = "2025-01-15",
+    version = "2.0"
+)
 public class Member {
+    
+    @Validatable(required = true, minLength = 3, maxLength = 20,
+                 message = "Member ID must be 3-20 characters")
     private final String memberId;
+    
+    @Validatable(required = true, minLength = 2, maxLength = 100,
+                 message = "Name is required")
     private final String name;
+    
+    @Validatable(required = true, message = "Email is required")
     private final String email;
+    
     private final LocalDate registrationDate;
     private final MemberType memberType;
     private final List<String> borrowedBookIsbns;
     
-    // Refactoring: Replace Type Code with Enum (eliminates magic numbers)
     public enum MemberType {
         STUDENT(3), FACULTY(5), GUEST(1);
         
@@ -48,19 +60,17 @@ public class Member {
         this.borrowedBookIsbns = new ArrayList<>(builder.borrowedBookIsbns);
     }
     
-    // Getters
     public String getMemberId() { return memberId; }
     public String getName() { return name; }
     public String getEmail() { return email; }
     public LocalDate getRegistrationDate() { return registrationDate; }
     public MemberType getMemberType() { return memberType; }
     
-    // Refactoring: Encapsulate Collection
     public List<String> getBorrowedBookIsbns() { 
         return Collections.unmodifiableList(borrowedBookIsbns); 
     }
     
-    // Refactoring: Extract Method
+    @PerformanceMonitor(operationName = "Check Borrow Limit")
     public boolean canBorrowMore() {
         return getBorrowedCount() < getMaxAllowedBooks();
     }
@@ -73,7 +83,7 @@ public class Member {
         return memberType.getMaxBooksAllowed();
     }
     
-    // Builder Pattern
+    @DesignPattern(pattern = "Builder Pattern (Inner Class)")
     public static class Builder {
         private String memberId;
         private String name;

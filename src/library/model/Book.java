@@ -1,34 +1,46 @@
 package library.model;
 
+import library.annotations.*;
 import java.time.LocalDate;
 import java.util.Objects;
 
 /**
- * Phase 2 - Commit 1: Book class FULLY REFACTORED
- * 
- * REFACTORINGS APPLIED:
- * 1. Replace Constructor with Builder Pattern
- * 2. Encapsulate Fields (private final with getters)
- * 3. Replace Type Code with Enum (BookStatus)
- * 4. Make Immutable (withStatus returns new instance)
- * 5. Extract Method (formatBookInfo)
- * 6. Improve Naming (descriptive variables)
+ * Book class with Custom Annotations
  */
+@DesignPattern(
+    pattern = "Builder Pattern",
+    description = "Provides flexible object construction with optional parameters",
+    benefits = {"Readable code", "Immutable objects", "No telescoping constructors"}
+)
+@Immutable(threadSafe = true)
+@Author(
+    name = "Library Team",
+    date = "2025-01-15",
+    version = "2.0",
+    modifications = {"Added Builder Pattern", "Made immutable", "Added custom annotations"}
+)
 public class Book {
-    // Refactoring: Encapsulate Fields - all private final
+    
+    @Validatable(required = true, minLength = 10, maxLength = 20, 
+                 message = "ISBN must be between 10-20 characters")
     private final String isbn;
+    
+    @Validatable(required = true, minLength = 1, maxLength = 200,
+                 message = "Title is required")
     private final String title;
+    
+    @Validatable(required = true, minLength = 1, maxLength = 100,
+                 message = "Author is required")
     private final String author;
+    
     private final String category;
     private final BookStatus status;
     private final LocalDate publishDate;
     
-    // Refactoring: Replace Type Code with Enum
     public enum BookStatus {
         AVAILABLE, BORROWED, RESERVED, MAINTENANCE
     }
     
-    // Private constructor - use Builder
     private Book(Builder builder) {
         this.isbn = builder.isbn;
         this.title = builder.title;
@@ -46,7 +58,7 @@ public class Book {
     public BookStatus getStatus() { return status; }
     public LocalDate getPublishDate() { return publishDate; }
     
-    // Refactoring: Immutability - return new instance
+    @PerformanceMonitor(operationName = "Book Status Update", logExecution = true)
     public Book withStatus(BookStatus newStatus) {
         return new Builder()
             .isbn(this.isbn)
@@ -58,7 +70,10 @@ public class Book {
             .build();
     }
     
-    // Refactoring: Builder Pattern
+    @DesignPattern(
+        pattern = "Builder Pattern (Inner Class)",
+        description = "Nested builder for fluent API"
+    )
     public static class Builder {
         private String isbn;
         private String title;
@@ -105,7 +120,6 @@ public class Book {
         }
     }
     
-    // Refactoring: Extract Method
     public String getFormattedInfo() {
         return formatBookInfo();
     }
